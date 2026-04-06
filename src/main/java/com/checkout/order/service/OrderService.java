@@ -51,9 +51,14 @@ public class OrderService {
         List<OrderItem> items = new ArrayList<>();
         BigDecimal total = BigDecimal.ZERO;
 
-        // N+1: one call per item instead of one batch call for all items
+        // Batch: collect all productIds first, then validate in a single call
+        List<UUID> productIds = new ArrayList<>();
         for (OrderItemRequest itemRequest : request.items()) {
-            validateInventory(itemRequest.productId(), itemRequest.quantity()); // ← N+1 here
+            productIds.add(itemRequest.productId());
+        }
+        validateInventoryBatch(productIds);
+
+        for (OrderItemRequest itemRequest : request.items()) {
             OrderItem item = new OrderItem();
             item.setOrder(order);
             item.setProductId(itemRequest.productId());
@@ -130,11 +135,11 @@ public class OrderService {
         return orderRepository.findByStatus(status); // ← full table scan
     }
 
-    // Simulates a per-item inventory check — the N+1 bottleneck
-    private void validateInventory(UUID productId, int quantity) {
-        log.debug("Checking inventory for productId={} qty={}", productId, quantity);
-        // In real code: hits inventory service REST endpoint individually per product
-        // Simulated delay represents network + DB round trip
+    // Batch inventory validation — single call instead of N individual calls
+    private void validateInventoryBatch(List<UUID> productIds) {
+        log.debug("Batch-checking inventory for {} products", productIds.size());
+        // In real code: hits inventory service REST endpoint once with all productIds
+        // Single network + DB round trip regardless of item count
     }
 
     // Blocking synchronous payment service notification
