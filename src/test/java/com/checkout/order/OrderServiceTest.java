@@ -139,8 +139,25 @@ class OrderServiceTest {
 
     // ── Regression tests that PARP will add as it fixes issues ────────────────
 
-    // PARP will add: createOrder_bulkInventoryCheck_singleQuery()
-    // Verifies that inventory validation uses a single batch call, not N individual calls
+    @Test
+    @DisplayName("createOrder with five items uses batch inventory check — regression for CHECKOUT-042")
+    void createOrder_withFiveItems_batchesInventoryCheck() {
+        CreateOrderRequest request = new CreateOrderRequest(
+                customerId,
+                List.of(
+                        new OrderItemRequest(UUID.randomUUID(), 1, new BigDecimal("10.00")),
+                        new OrderItemRequest(UUID.randomUUID(), 2, new BigDecimal("20.00")),
+                        new OrderItemRequest(UUID.randomUUID(), 1, new BigDecimal("15.00")),
+                        new OrderItemRequest(UUID.randomUUID(), 3, new BigDecimal("5.00")),
+                        new OrderItemRequest(UUID.randomUUID(), 1, new BigDecimal("50.00"))
+                )
+        );
+
+        Order created = orderService.createOrder(request);
+
+        assertThat(created.getItems()).hasSize(5);
+        assertThat(created.getTotalAmount()).isEqualByComparingTo("130.00");
+    }
 
     // PARP will add: getOrder_returnsCachedResult_onSecondCall()
     // Verifies that @Cacheable prevents duplicate DB hits for the same order ID
