@@ -34,6 +34,7 @@ public class OrderItem {
 
     // Getters and setters
     public UUID getId() { return id; }
+    @com.fasterxml.jackson.annotation.JsonBackReference
     public Order getOrder() { return order; }
     public void setOrder(Order order) { this.order = order; }
     public UUID getProductId() { return productId; }
