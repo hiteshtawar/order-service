@@ -113,8 +113,9 @@ public class OrderService {
             throw new IllegalStateException("Cannot cancel a fulfilled order");
         }
         order.setStatus(OrderStatus.CANCELLED);
-        notifyPaymentServiceSync(order); // ← blocking call
-        return orderRepository.save(order);
+        Order saved = orderRepository.save(order);
+        applicationEventPublisher.publishEvent(new OrderCancelledEvent(saved));
+        return saved;
     }
 
     /**
@@ -138,9 +139,5 @@ public class OrderService {
     }
 
     // Blocking synchronous payment service notification
-    private void notifyPaymentServiceSync(Order order) {
-        log.info("Notifying payment service for order={} (SYNC)", order.getId());
-        // Real code: restTemplate.postForEntity(paymentServiceUrl, payload, Void.class)
-        // This blocks the servlet thread for the full HTTP round trip
-    }
+
 }
